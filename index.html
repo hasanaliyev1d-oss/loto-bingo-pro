@@ -1,251 +1,166 @@
 <!DOCTYPE html>
 <html lang="az">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#10152d">
-  <title>Loto Bingo Pro</title>
-  <script src="/socket.io/socket.io.js"></script>
-  <style>
-    *{box-sizing:border-box}
-    :root{color-scheme:dark}
-    body{margin:0;min-height:100vh;padding:18px;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f8fafc;background:radial-gradient(circle at top,#343b7c 0,#171b3b 42%,#090d1c 100%)}
-    .wrap{max-width:1000px;margin:auto}
-    header{text-align:center;padding:12px 0 20px}
-    h1{margin:0;color:#fde047;font-size:clamp(27px,5vw,42px);letter-spacing:1px}
-    .sub{color:#cbd5e1;margin-top:8px}
-    .panel{background:#161d36eF;border:1px solid #ffffff1a;border-radius:18px;padding:18px;margin:12px auto;box-shadow:0 12px 30px #0003}
-    .login{max-width:430px}
-    input,button{width:100%;padding:13px 14px;border:1px solid #465171;border-radius:10px;font-size:16px;margin-top:10px}
-    input{background:#0c1227;color:white}
-    button{background:linear-gradient(135deg,#22c55e,#15803d);border:0;color:white;font-weight:750;cursor:pointer}
-    button:disabled{opacity:.45;cursor:not-allowed}
-    .blue{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}
-    .gold{background:linear-gradient(135deg,#facc15,#ca8a04);color:#171717}
-    .red{background:linear-gradient(135deg,#ef4444,#b91c1c)}
-    .hidden{display:none!important}
-    .row{display:flex;gap:10px;align-items:center}
-    .row>*{flex:1}
-    .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;text-align:center}
-    .stat{background:#0b1125;border-radius:12px;padding:12px}
-    .stat small{display:block;color:#94a3b8}
-    .stat strong{display:block;font-size:23px;color:#fde047;margin-top:4px}
-    .status{font-size:14px;color:#cbd5e1;min-height:20px}
-    .balls{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:12px 0}
-    .ball{width:37px;height:37px;display:grid;place-items:center;border-radius:50%;background:#273250;border:1px solid #475569;font-weight:800}
-    .ball.latest{background:#fde047;color:#111827;border-color:#fef08a;transform:scale(1.08)}
-    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:12px}
-    .card{background:#0b1125;border:1px solid #ffffff18;border-radius:14px;padding:12px}
-    .card-title{color:#fde047;font-weight:800;margin-bottom:8px}
-    .grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:4px}
-    .cell{aspect-ratio:1;display:grid;place-items:center;border-radius:6px;background:#293653;color:#f8fafc;font-weight:800;font-size:clamp(12px,2.8vw,18px);border:1px solid #ffffff0a}
-    .cell.empty{background:#11182c;color:transparent}
-    .cell.marked{background:#fde047;color:#111827;box-shadow:0 0 8px #fde04755}
-    ul{padding-left:22px}
-    li{padding:4px 0;color:#e2e8f0}
-    .hint{font-size:13px;color:#94a3b8;line-height:1.5}
-    @media(max-width:520px){body{padding:10px}.panel{padding:13px}.row{gap:7px}.stats{gap:6px}.stat{padding:9px 4px}.stat strong{font-size:19px}.ball{width:32px;height:32px}}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oyun və Balans Sistemi</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #fff; margin: 0; padding: 20px; text-align: center; }
+        .container { max-width: 400px; margin: auto; background: #1e293b; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .balance-box { font-size: 20px; margin-bottom: 15px; background: #334155; padding: 10px; border-radius: 8px; }
+        button { background: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 16px; margin: 5px; width: 100%; }
+        button:hover { background: #16a34a; }
+        input { width: calc(100% - 20px); padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: white; }
+        .hidden { display: none; }
+        .history-list { text-align: left; max-height: 150px; overflow-y: auto; background: #0f172a; padding: 10px; border-radius: 6px; font-size: 14px; margin-top: 10px; }
+    </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>🎱 LOTO BINGO PRO</h1>
-    <div class="sub">Dostlarınla oyna · Maksimum 6 nəfər · Şifrə: 666</div>
-  </header>
 
-  <section id="login-screen" class="panel login">
-    <h2 style="margin-top:0">Oyuna giriş</h2>
-    <label for="username">Adın</label>
-    <input id="username" maxlength="20" autocomplete="nickname" placeholder="Məsələn: Hasan">
-    <label for="pin">Giriş şifrəsi</label>
-    <input id="pin" type="password" inputmode="numeric" maxlength="3" placeholder="666">
-    <button id="join-btn">Oyuna qoşul</button>
-    <p id="connection-status" class="status">Serverə qoşulma yoxlanılır...</p>
-    <p class="hint">Bu versiya dostlarla pulsuz sınaq üçündür. Balans, depozit və real pul yoxdur.</p>
-  </section>
-
-  <main id="game-screen" class="hidden">
-    <section class="panel">
-      <div class="row">
-        <div><strong>Oyunçu:</strong> <span id="my-name">-</span></div>
-        <button id="leave-btn" class="red" style="max-width:130px;margin-top:0">Çıxış</button>
-      </div>
-      <div class="stats" style="margin-top:14px">
-        <div class="stat"><small>Oyunçular</small><strong id="player-count">0/6</strong></div>
-        <div class="stat"><small>Son rəqəm</small><strong id="last-number">—</strong></div>
-        <div class="stat"><small>Çıxan rəqəmlər</small><strong id="called-count">0/90</strong></div>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <button id="card-btn" class="blue">🎟️ Kart götür</button>
-        <button id="start-btn" class="gold">▶ Oyunu başlat</button>
-      </div>
-      <button id="reset-view-btn" class="blue">Rəqəmlər tarixçəsini göstər</button>
-      <p id="game-status" class="status">Kart götür, sonra oyunçulardan biri oyunu başlada bilər.</p>
-    </section>
-
-    <section class="panel">
-      <h3 style="margin-top:0">Çıxan rəqəmlər</h3>
-      <div id="called-balls" class="balls"></div>
-    </section>
-
-    <section class="panel">
-      <h3 style="margin-top:0">Sənin loto kartların <span id="card-count">(0)</span></h3>
-      <div id="cards-container" class="cards"></div>
-    </section>
-
-    <section class="panel">
-      <h3 style="margin-top:0">Oyunçular (maksimum 6)</h3>
-      <ul id="players-list"></ul>
-    </section>
-  </main>
+<div class="container" id="login-screen">
+    <h2>Oyuna Giriş</h2>
+    <input type="text" id="username" placeholder="Adınızı daxil edin...">
+    <input type="text" id="room-code" placeholder="Kodu daxil edin (məs: 123)">
+    <button onclick="joinGame()">Daxil ol və Başla</button>
 </div>
+
+<div class="container hidden" id="game-screen">
+    <div class="balance-box">Balans: <span id="balance">0.00</span> AZN</div>
+    
+    <button onclick="openDeposit()">Depozit Et (Balans Artır)</button>
+    <button onclick="openWithdraw()">Çıxarış Et</button>
+    <button onclick="buyCard()">Kart Al (0.50 AZN)</button>
+
+    <div id="host-controls" class="hidden">
+        <h3>Host Panel</h3>
+        <button onclick="startGame()">Oyunu Başlat</button>
+    </div>
+
+    <div id="game-area">
+        <h3 id="status-text">Oyunçular gözlənilir...</h3>
+    </div>
+
+    <h4>Tarixçə</h4>
+    <div class="history-list" id="history"></div>
+</div>
+
+<!-- Depozit Modalı -->
+<div class="container hidden" id="deposit-modal">
+    <h3>Depozit</h3>
+    <p>Kart: <b>5411249813079287</b></p>
+    <input type="text" id="check-number" placeholder="Çəkin üzərindəki rəqəmi daxil edin">
+    <button onclick="confirmDeposit()">Təsdiq Et</button>
+    <button style="background:#ef4444;" onclick="closeModals()">Geri</button>
+</div>
+
+<!-- Çıxarış Modalı -->
+<div class="container hidden" id="withdraw-modal">
+    <h3>Çıxarış</h3>
+    <input type="number" id="withdraw-amount" placeholder="Məbləği qeyd edin (AZN)">
+    <button onclick="confirmWithdraw()">Teleqrama Göndər</button>
+    <button style="background:#ef4444;" onclick="closeModals()">Geri</button>
+</div>
+
 <script>
-  const socket = io();
-  const $ = id => document.getElementById(id);
-  let myCards = [];
-  let calledNumbers = [];
-  let joined = false;
+    const socket = io();
+    let balance = parseFloat(localStorage.getItem('user_balance')) || 0.00;
+    let historyData = JSON.parse(localStorage.getItem('user_history')) || [];
+    let isHost = false;
 
-  socket.on('connect', () => {
-    $('connection-status').textContent = 'Serverə bağlantı var. Adını və 666 şifrəsini yaz.';
-  });
-  socket.on('disconnect', () => {
-    $('connection-status').textContent = 'Serverlə bağlantı kəsildi. Səhifəni yenilə.';
-    $('game-status').textContent = 'Serverlə bağlantı kəsildi.';
-  });
-  socket.on('connect_error', err => {
-    $('connection-status').textContent = 'Bağlantı xətası: ' + err.message;
-  });
+    updateUI();
 
-  $('join-btn').onclick = () => {
-    const username = $('username').value.trim();
-    const pin = $('pin').value.trim();
-    if (!username) return alert('Adını yaz.');
-    if (!pin) return alert('Giriş şifrəsini yaz.');
-    socket.emit('join_game', { username, pin });
-  };
+    function joinGame() {
+        const username = document.getElementById('username').value;
+        const code = document.getElementById('room-code').value;
+        if(!username || !code) return alert("Məlumatları doldurun!");
 
-  socket.on('joined_success', data => {
-    joined = true;
-    $('login-screen').classList.add('hidden');
-    $('game-screen').classList.remove('hidden');
-    $('my-name').textContent = data?.username || $('username').value.trim();
-    $('game-status').textContent = 'Qoşuldun! Kart götür və dostlarının qoşulmasını gözlə.';
-  });
-  socket.on('error_msg', msg => alert(msg));
-  socket.on('info_msg', msg => alert(msg));
-
-  $('card-btn').onclick = () => socket.emit('get_card');
-  $('start-btn').onclick = () => socket.emit('start_game');
-  $('reset-view-btn').onclick = () => renderCalled();
-  $('leave-btn').onclick = () => {
-    // Serverdən çıxmaq üçün socket bağlantısını yeniləyib səhifəni yenilə.
-    location.reload();
-  };
-
-  socket.on('my_cards', cards => {
-    myCards = cards || [];
-    renderCards();
-  });
-
-  socket.on('number_called', data => {
-    calledNumbers = data.allCalled || [...calledNumbers, data.number];
-    $('last-number').textContent = data.number;
-    $('called-count').textContent = calledNumbers.length + '/90';
-    renderCards();
-    renderCalled();
-    $('game-status').textContent = 'Rəqəmlər çıxır! Kartındakı rəqəmlər avtomatik işarələnir.';
-  });
-
-  socket.on('game_started', () => {
-    $('game-status').textContent = 'Oyun başladı! Hər 2.5 saniyədə yeni rəqəm çıxacaq.';
-  });
-
-  socket.on('game_state', state => {
-    if (!state) return;
-    calledNumbers = state.calledNumbers || calledNumbers;
-    $('last-number').textContent = state.lastNumber ?? '—';
-    $('called-count').textContent = calledNumbers.length + '/90';
-    if (state.gameStarted) $('game-status').textContent = 'Oyun davam edir...';
-    renderCards();
-    renderCalled();
-  });
-
-  socket.on('round_reset', () => {
-    calledNumbers = [];
-    $('last-number').textContent = '—';
-    $('called-count').textContent = '0/90';
-    renderCards();
-    renderCalled();
-  });
-
-  socket.on('game_won', data => {
-    $('game-status').textContent = '🏆 Qalib: ' + data.winner + '! Yeni raund başlatmaq olar.';
-    alert('🏆 Oyun bitdi! Qalib: ' + data.winner);
-  });
-
-  socket.on('update_players', players => {
-    const entries = Object.values(players || {});
-    $('player-count').textContent = entries.length + '/6';
-    $('players-list').innerHTML = '';
-    if (!entries.length) {
-      const li = document.createElement('li');
-      li.textContent = 'Hələ heç kim qoşulmayıb.';
-      $('players-list').appendChild(li);
-      return;
+        socket.emit('join-game', username);
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
     }
-    entries.forEach(p => {
-      const li = document.createElement('li');
-      li.textContent = p.username + (p.ready ? ' — kartı var' : ' — kart gözləyir');
-      $('players-list').appendChild(li);
-    });
-  });
 
-  function renderCards() {
-    $('card-count').textContent = '(' + myCards.length + ')';
-    const root = $('cards-container');
-    root.innerHTML = '';
-    if (!myCards.length) {
-      root.textContent = 'Hələ kartın yoxdur. “Kart götür” düyməsinə bas.';
-      return;
-    }
-    myCards.forEach((card, idx) => {
-      const wrap = document.createElement('div');
-      wrap.className = 'card';
-      const title = document.createElement('div');
-      title.className = 'card-title';
-      title.textContent = 'Kart #' + (idx + 1);
-      wrap.appendChild(title);
-      const grid = document.createElement('div');
-      grid.className = 'grid';
-      card.forEach(row => row.forEach(n => {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        if (n === null) {
-          cell.classList.add('empty');
-          cell.textContent = '·';
+    socket.on('set-host', (status) => {
+        isHost = status;
+        if(isHost) {
+            document.getElementById('host-controls').classList.remove('hidden');
+            document.getElementById('status-text').innerText = "Oyunu başlada bilərsiniz.";
         } else {
-          cell.textContent = n;
-          if (calledNumbers.includes(n)) cell.classList.add('marked');
+            document.getElementById('status-text').innerText = "Hostun oyunu başlatması gözlənilir...";
         }
-        grid.appendChild(cell);
-      }));
-      wrap.appendChild(grid);
-      root.appendChild(wrap);
     });
-  }
 
-  function renderCalled() {
-    const root = $('called-balls');
-    root.innerHTML = '';
-    calledNumbers.forEach(n => {
-      const ball = document.createElement('div');
-      ball.className = 'ball' + (n === calledNumbers[calledNumbers.length - 1] ? ' latest' : '');
-      ball.textContent = n;
-      root.appendChild(ball);
+    socket.on('ready-to-start', (players) => {
+        if(!isHost) {
+            document.getElementById('status-text').innerText = "Oyunçular qoşuldu. Başlamaq üçün gözləyin.";
+        }
     });
-  }
+
+    function startGame() {
+        socket.emit('start-game-signal');
+    }
+
+    socket.on('game-started', () => {
+        document.getElementById('status-text').innerText = "Oyun başladı! Uğurlar!";
+    });
+
+    function updateUI() {
+        document.getElementById('balance').innerText = balance.toFixed(2);
+        localStorage.setItem('user_balance', balance);
+        
+        const historyEl = document.getElementById('history');
+        historyEl.innerHTML = historyData.map(h => `<div>• ${h}</div>`).join('');
+        localStorage.setItem('user_history', JSON.stringify(historyData));
+    }
+
+    function openDeposit() { document.getElementById('deposit-modal').classList.remove('hidden'); }
+    function openWithdraw() { document.getElementById('withdraw-modal').classList.remove('hidden'); }
+    function closeModals() { 
+        document.getElementById('deposit-modal').classList.add('hidden');
+        document.getElementById('withdraw-modal').classList.add('hidden');
+    }
+
+    function confirmDeposit() {
+        const checkVal = document.getElementById('check-number').value;
+        if(checkVal === "5411249813079287" || checkVal.length >= 6) { // Çəkin uyğunluq şərti
+            balance += 10; // Nümunə olaraq depozit məbləği
+            historyData.unshift(`Depozit təsdiqləndi: +10 AZN`);
+            updateUI();
+            closeModals();
+            alert("Məbləğ balansa əlavə olundu!");
+        } else {
+            alert("Çəkin üzərindəki rəqəm uyğun gəlmədi!");
+        }
+    }
+
+    function buyCard() {
+        if(balance >= 0.50) {
+            balance -= 0.50;
+            historyData.unshift(`Kart alındı: -0.50 AZN`);
+            updateUI();
+            alert("Kart uğurla alındı!");
+        } else {
+            alert("Balansda kifayət qədər vəsait yoxdur!");
+        }
+    }
+
+    function confirmWithdraw() {
+        const amount = document.getElementById('withdraw-amount').value;
+        if(!amount || amount <= 0) return alert(" düzgün məbləğ daxil edin!");
+        if(amount > balance) return alert("Balansda kifayət qədər pul yoxdur!");
+
+        balance -= parseFloat(amount);
+        historyData.unshift(`Çıxarış tələbi: -${amount} AZN`);
+        updateUI();
+        
+        // Telegram botunuza yönləndirmə (öz teleqram istifadəçi adınızı və ya bot linkinizi yazın)
+        const telegramUser = "SENIN_TELEGRAM_USERNAME"; 
+        const message = encodeURIComponent(`Salam, çıxarış etmək istəyirəm. Məbləğ: ${amount} AZN`);
+        window.open(`https://t.me/${telegramUser}?text=${message}`, '_blank');
+        
+        closeModals();
+    }
 </script>
+
 </body>
 </html>
