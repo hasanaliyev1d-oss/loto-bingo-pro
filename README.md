@@ -1,1 +1,0 @@
-# loto-bingo-pro
